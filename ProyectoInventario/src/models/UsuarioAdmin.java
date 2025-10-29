@@ -28,11 +28,12 @@ public class UsuarioAdmin extends UsuarioBase implements Administrador {
             );
 
             switch (opcion) {
-                case 0 -> gestionarUsuarios();
-                case 1 -> gestionarProductos();
-                case 2 -> JOptionPane.showMessageDialog(null, "Gestión de proveedores (pendiente)");
-                case 3 -> JOptionPane.showMessageDialog(null, "Gestión de movimientos (pendiente)");
-                case 4 -> JOptionPane.showMessageDialog(null, "Generación de reportes (pendiente)");
+                case 0 -> gestionarUsuarios();     // usa ControllerUsuario
+                case 1 -> gestionarProductos();     // usa ControllerProducto
+                case 2 -> gestionarProveedores();   // usa ControllerProveedor
+                case 3 -> verMovimientos();         // usa ControllerMovimientoStock
+                case 4 -> generarReportes();        // usa ControllerReportes.reporteVentasPorVendedor()
+                default -> { /* salir */ }
             }
 
         } while (opcion != 5 && opcion != JOptionPane.CLOSED_OPTION);
