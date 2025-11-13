@@ -57,13 +57,14 @@ public class MenuAdminView extends JFrame {
         
         // === Acciones reales (controladores) ===
         btnUsuarios.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Abriendo gestión de usuarios...");
-            controllerUsuario.listarUsuarios(); // ejemplo, podés reemplazar por tu método real
+            dispose();
+            new views.UsuariosView(usuario).setVisible(true);
         });
+
 
         btnProductos.addActionListener(e -> {
             JOptionPane.showMessageDialog(this, "Abriendo gestión de productos...");
-            controllerProducto.listarProductos();
+            
         });
 
         btnProveedores.addActionListener(e -> {
@@ -73,12 +74,12 @@ public class MenuAdminView extends JFrame {
 
         btnMovimientos.addActionListener(e -> {
             JOptionPane.showMessageDialog(this, "Abriendo movimientos de stock...");
-            controllerMovimientoStock.listarMovimientos();
+            
         });
 
         btnReportes.addActionListener(e -> {
             JOptionPane.showMessageDialog(this, "Generando reportes...");
-            controllerReportes.generarReporte();
+           
         });
 
         btnSalir.addActionListener(e -> {
