@@ -36,9 +36,14 @@ public class LoginView extends JFrame {
         lblLogo = new JLabel();
         lblLogo.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        ImageIcon icon = new ImageIcon("img/Logo SG.png");
-        Image scaled = icon.getImage().getScaledInstance(150, 150, Image.SCALE_SMOOTH);
-        lblLogo.setIcon(new ImageIcon(scaled));
+        try {
+            ImageIcon icon = new ImageIcon(getClass().getResource("/img/LogoSG.png")); // << ESTA ES LA CORRECTA
+            Image scaled = icon.getImage().getScaledInstance(150, 150, Image.SCALE_SMOOTH);
+            lblLogo.setIcon(new ImageIcon(scaled));
+        } catch (Exception e) {
+            System.err.println("❌ No se pudo cargar el logo: " + e.getMessage());
+        }
+
         lblLogo.setBorder(BorderFactory.createEmptyBorder(10, 10, 5, 10));
 
         // ======== TÍTULO ========
@@ -94,7 +99,7 @@ public class LoginView extends JFrame {
                 return;
             }
 
-            UsuarioBase usuario = controller.login(email, pass);
+            UsuarioBase usuario = ControllerUsuario.login(email, pass);
 
             if (usuario != null) {
                 JOptionPane.showMessageDialog(this,
@@ -102,22 +107,13 @@ public class LoginView extends JFrame {
                         "Acceso concedido", JOptionPane.INFORMATION_MESSAGE);
 
                 switch (usuario.getRol()) {
-                case ADMIN -> {
-                    new MenuAdminView(usuario).setVisible(true);
-                    dispose();
+                    case ADMIN -> new MenuAdminView(usuario).setVisible(true);
+                    case VENDEDOR -> JOptionPane.showMessageDialog(this, "Vista vendedor no implementada aún.");
+                    case DEPOSITO -> JOptionPane.showMessageDialog(this, "Vista depósito no implementada aún.");
+                    default -> JOptionPane.showMessageDialog(this, "Rol no reconocido.");
                 }
-                case VENDEDOR -> {
-                  
-                }
-                case DEPOSITO -> {
-                    
-                }
-                default -> {
-                    JOptionPane.showMessageDialog(this, "Rol no reconocido.");
-                }
-            }
 
-                dispose(); // cerrar login
+                dispose(); 
             } else {
                 JOptionPane.showMessageDialog(this, "Credenciales incorrectas.", "Error", JOptionPane.ERROR_MESSAGE);
             }

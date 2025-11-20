@@ -8,6 +8,7 @@ import DLL.ControllerProducto;
 import DLL.ControllerProveedor;
 import DLL.ControllerMovimientoStock;
 import DLL.ControllerReportes;
+import helpers.UIHelper;
 
 public class MenuAdminView extends JFrame {
 
@@ -19,6 +20,7 @@ public class MenuAdminView extends JFrame {
     private ControllerReportes controllerReportes;
 
     public MenuAdminView(UsuarioBase usuario) {
+
         // === Inicializar controladores ===
         controllerUsuario = new ControllerUsuario();
         controllerProducto = new ControllerProducto();
@@ -33,53 +35,81 @@ public class MenuAdminView extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setResizable(false);
 
-        // === Panel principal ===
         JPanel mainPanel = new JPanel(new BorderLayout());
         mainPanel.setBackground(new Color(245, 245, 245));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 40, 20, 40));
+        add(mainPanel);
 
         // === Título ===
         JLabel lblTitulo = new JLabel("Panel del Administrador", SwingConstants.CENTER);
         lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 22));
         lblTitulo.setBorder(BorderFactory.createEmptyBorder(10, 0, 30, 0));
+        mainPanel.add(lblTitulo, BorderLayout.NORTH);
 
-        // === Panel de botones (2 columnas, 3 filas) ===
+        // === Panel de botones ===
         JPanel gridPanel = new JPanel(new GridLayout(3, 2, 20, 20));
         gridPanel.setOpaque(false);
 
-        // === Botones coloridos ===
-        JButton btnUsuarios = crearBoton("Gestionar Usuarios", "img/icons/users.png", new Color(46, 204, 113));
-        JButton btnProductos = crearBoton("Gestionar Productos", "img/icons/products.png", new Color(52, 152, 219));
-        JButton btnProveedores = crearBoton("Gestionar Proveedores", "img/icons/providers.png", new Color(231, 76, 60));
-        JButton btnMovimientos = crearBoton("Movimientos de Stock", "img/icons/stock.png", new Color(243, 156, 18));
-        JButton btnReportes = crearBoton("Reportes", "img/icons/reports.png", new Color(111, 66, 33));
-        JButton btnSalir = crearBoton("Cerrar Sesión", "img/icons/logout.png", new Color(26, 188, 156));
-        
-        // === Acciones reales (controladores) ===
+        JButton btnUsuarios = UIHelper.crearBotonMenu(
+                "Gestionar Usuarios",
+                "/img/clientes.png",
+                new Color(46, 204, 113)
+        );
+
+        JButton btnProductos = UIHelper.crearBotonMenu(
+                "Gestionar Productos",
+                "/img/agregar-producto.png",
+                new Color(52, 152, 219)
+        );
+
+        JButton btnProveedores = UIHelper.crearBotonMenu(
+                "Gestionar Proveedores",
+                "/img/gestion.png",
+                new Color(231, 76, 60)
+        );
+
+        JButton btnMovimientos = UIHelper.crearBotonMenu(
+                "Movimientos de Stock",
+                "/img/factura.png",
+                new Color(243, 156, 18)
+        );
+
+        JButton btnReportes = UIHelper.crearBotonMenu(
+                "Reportes",
+                "/img/ventas.png",
+                new Color(111, 66, 33)
+        );
+
+        JButton btnSalir = UIHelper.crearBotonMenu(
+                "Cerrar Sesión",
+                "/img/apagar.png",
+                new Color(26, 188, 156)
+        );
+
+        // === Acciones ===
         btnUsuarios.addActionListener(e -> {
             dispose();
-            new views.UsuariosView(usuario).setVisible(true);
+            new UsuariosView(usuario).setVisible(true);
         });
 
-
         btnProductos.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Abriendo gestión de productos...");
-            
+            dispose();
+            new ProductosView(usuario).setVisible(true);
         });
 
         btnProveedores.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Abriendo gestión de proveedores...");
-            controllerProveedor.listarProveedores();
+            dispose();
+            new ProveedoresView(usuario).setVisible(true);
         });
 
         btnMovimientos.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Abriendo movimientos de stock...");
-            
+            dispose();
+            new MovimientosView(usuario).setVisible(true);
         });
 
         btnReportes.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Generando reportes...");
-           
+            dispose();
+            new ReportesView(usuario).setVisible(true);
         });
 
         btnSalir.addActionListener(e -> {
@@ -95,67 +125,10 @@ public class MenuAdminView extends JFrame {
         gridPanel.add(btnReportes);
         gridPanel.add(btnSalir);
 
-        // === Panel inferior (vacío o futuro pie de página) ===
-        JPanel bottomPanel = new JPanel();
-        bottomPanel.setBackground(new Color(245, 245, 245));
-
-        // === Estructura ===
-        mainPanel.add(lblTitulo, BorderLayout.NORTH);
         mainPanel.add(gridPanel, BorderLayout.CENTER);
-        mainPanel.add(bottomPanel, BorderLayout.SOUTH);
 
-        add(mainPanel);
-
-        // === Mostrar mensaje flotante ===
-        SwingUtilities.invokeLater(() -> mostrarMensajeBienvenida("Bienvenido, " + usuario.getNombre() + " 👋"));
-    }
-
-    // === Crear botón personalizado ===
-    private JButton crearBoton(String texto, String iconPath, Color colorFondo) {
-        JButton boton = new JButton(texto);
-        boton.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        boton.setForeground(Color.WHITE);
-        boton.setFocusPainted(false);
-        boton.setBorderPainted(false);
-        boton.setBackground(colorFondo);
-        boton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        boton.setHorizontalAlignment(SwingConstants.LEFT);
-        boton.setIconTextGap(15);
-        boton.setMargin(new Insets(10, 20, 10, 20));
-
-        // Efecto hover
-        boton.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                boton.setBackground(colorFondo.darker());
-            }
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                boton.setBackground(colorFondo);
-            }
-        });
-
-        return boton;
-    }
-
-    // === Mensaje tipo “toast” ===
-    private void mostrarMensajeBienvenida(String texto) {
-        JWindow toast = new JWindow();
-        JLabel lbl = new JLabel(texto, SwingConstants.CENTER);
-        lbl.setOpaque(true);
-        lbl.setBackground(new Color(0, 0, 0, 180));
-        lbl.setForeground(Color.WHITE);
-        lbl.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        lbl.setBorder(BorderFactory.createEmptyBorder(10, 25, 10, 25));
-
-        toast.add(lbl);
-        toast.pack();
-
-        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        int x = (screenSize.width - toast.getWidth()) / 2;
-        int y = (screenSize.height - toast.getHeight()) / 2;
-        toast.setLocation(x, y);
-        toast.setVisible(true);
-
-        new Timer(2500, e -> toast.dispose()).start();
+        // === Mensaje bienvenida ===
+        SwingUtilities.invokeLater(() -> UIHelper.mostrarToast("Bienvenido, " + usuario.getNombre() + " 👋"));
     }
 }
 

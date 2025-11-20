@@ -2,165 +2,238 @@ package views;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.*;
 import DLL.ControllerUsuario;
-import models.UsuarioBase;
 import Enums.Rol;
-import views.MenuAdminView;
+import models.UsuarioBase;
+
+import java.sql.*;
 
 public class UsuariosView extends JFrame {
 
-    private UsuarioBase usuarioActual;
+    private JPanel cardsPanel; 
+    private UsuarioBase usuario;
 
     public UsuariosView(UsuarioBase usuario) {
-        this.usuarioActual = usuario;
+        this.usuario = usuario;
 
-        // === Configuración ===
-        setTitle("Gestión de Usuarios - " + usuario.getNombre());
-        setSize(600, 450);
+        setTitle("Usuarios - " + usuario.getNombre() + " (" + usuario.getRol() + ")");
+        setSize(650, 500);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setResizable(false);
+        setLayout(new BorderLayout());
 
-        // === Panel principal ===
-        JPanel mainPanel = new JPanel();
-        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
-        mainPanel.setBackground(new Color(245, 245, 245));
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 40, 20, 40));
-
-        // === Barra superior (Volver + Título) ===
+        // =============================
+        // TOP PANEL (volver + título)
+        // =============================
         JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.setBackground(new Color(245, 245, 245));
+        topPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        JButton btnBack = new JButton("⬅ Volver");
-        btnBack.setFocusPainted(false);
-        btnBack.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        btnBack.setBackground(new Color(230, 230, 230));
-        btnBack.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-
-        btnBack.addActionListener(e -> {
-            dispose();
-            new MenuAdminView(usuarioActual).setVisible(true);
-        });
+        JButton btnBack = crearBotonBack();
+        topPanel.add(btnBack, BorderLayout.WEST);
 
         JLabel lblTitulo = new JLabel("Gestión de Usuarios", SwingConstants.CENTER);
         lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 22));
-
-        topPanel.add(btnBack, BorderLayout.WEST);
         topPanel.add(lblTitulo, BorderLayout.CENTER);
 
-        // === Panel de botones ===
-        JPanel gridPanel = new JPanel(new GridLayout(2, 2, 20, 20));
-        gridPanel.setOpaque(false);
-        gridPanel.setBorder(BorderFactory.createEmptyBorder(30, 0, 0, 0));
+        add(topPanel, BorderLayout.NORTH);
 
-        JButton btnCrear = crearBoton("➕ Crear Usuario", new Color(46, 204, 113));
-        JButton btnEditar = crearBoton("📝 Editar Usuario", new Color(52, 152, 219));
-        JButton btnEliminar = crearBoton("❌ Eliminar Usuario", new Color(231, 76, 60));
-        JButton btnListar = crearBoton("📋 Listar Usuarios", new Color(243, 156, 18));
+        // =============================
+        // PANEL CENTRAL (cards)
+        // =============================
+        cardsPanel = new JPanel();
+        cardsPanel.setLayout(new BoxLayout(cardsPanel, BoxLayout.Y_AXIS));
+        cardsPanel.setBackground(new Color(245, 245, 245));
 
-        // === Acciones ===
+        JScrollPane scroll = new JScrollPane(cardsPanel);
+        scroll.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        add(scroll, BorderLayout.CENTER);
 
-        // ➕ Crear
-        btnCrear.addActionListener(e -> {
-            try {
-                String nombre = JOptionPane.showInputDialog("Ingrese nombre del usuario:");
-                String email = JOptionPane.showInputDialog("Ingrese email del usuario:");
-                String contrasena = JOptionPane.showInputDialog("Ingrese contraseña:");
-                String[] roles = {"ADMIN", "VENDEDOR", "DEPOSITO"};
-                String rolSeleccionado = (String) JOptionPane.showInputDialog(
-                        null,
-                        "Seleccione un rol:",
-                        "Rol de usuario",
-                        JOptionPane.QUESTION_MESSAGE,
-                        null,
-                        roles,
-                        roles[0]
-                );
+        // =============================
+        // PANEL INFERIOR (acciones)
+        // =============================
+        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 10));
+        bottomPanel.setBackground(new Color(245, 245, 245));
 
-                if (nombre == null || email == null || contrasena == null || rolSeleccionado == null ||
-                    nombre.trim().isEmpty() || email.trim().isEmpty() || contrasena.trim().isEmpty()) {
-                    JOptionPane.showMessageDialog(null, "❌ Todos los campos son obligatorios.");
-                    return;
-                }
+        JButton btnAgregar = crearBoton("Agregar usuario");
+        JButton btnEditar = crearBoton("Editar usuario");
+        JButton btnEliminar = crearBoton("Eliminar usuario");
+        JButton btnActualizar = crearBoton("Actualizar lista");
 
-                Rol rol = Rol.valueOf(rolSeleccionado.toUpperCase());
-                UsuarioBase nuevoUsuario = new UsuarioBase(0, nombre, email, contrasena, rol);
-                ControllerUsuario.agregarUsuario(nuevoUsuario);
+        bottomPanel.add(btnAgregar);
+        bottomPanel.add(btnEditar);
+        bottomPanel.add(btnEliminar);
+        bottomPanel.add(btnActualizar);
 
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(null, "❌ Error al crear usuario: " + ex.getMessage());
+        add(bottomPanel, BorderLayout.SOUTH);
+
+        // =============================
+        // PERMISOS POR ROL
+        // =============================
+        if (usuario.getRol() != Rol.ADMIN) {
+            btnAgregar.setEnabled(false);
+            btnEditar.setEnabled(false);
+            btnEliminar.setEnabled(false);
+
+            btnAgregar.setToolTipText("Solo administradores");
+            btnEditar.setToolTipText("Solo administradores");
+            btnEliminar.setToolTipText("Solo administradores");
+        }
+
+        // =============================
+        // EVENTOS
+        // =============================
+        btnAgregar.addActionListener(e -> {
+            UsuarioBase nuevo = UsuarioInputDialog.crearUsuario();
+            if (nuevo != null) {
+                ControllerUsuario.agregarUsuario(nuevo);
+                cargarUsuarios();
             }
         });
 
-        // 📝 Editar
         btnEditar.addActionListener(e -> {
-            try {
-                String idStr = JOptionPane.showInputDialog("Ingrese el ID del usuario a editar:");
-                if (idStr != null && !idStr.trim().isEmpty()) {
+            String idStr = JOptionPane.showInputDialog("ID del usuario a editar:");
+            if (idStr != null) {
+                try {
                     int id = Integer.parseInt(idStr);
                     ControllerUsuario.editarUsuario(id);
+                    cargarUsuarios();
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(this, "ID inválido");
                 }
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(null, "❌ Error al editar usuario: " + ex.getMessage());
             }
         });
 
-        // ❌ Eliminar
         btnEliminar.addActionListener(e -> {
-            try {
-                String idStr = JOptionPane.showInputDialog("Ingrese el ID del usuario a eliminar:");
-                if (idStr != null && !idStr.trim().isEmpty()) {
+            String idStr = JOptionPane.showInputDialog("ID del usuario a eliminar:");
+            if (idStr != null) {
+                try {
                     int id = Integer.parseInt(idStr);
                     ControllerUsuario.eliminarPorID(id);
+                    cargarUsuarios();
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(this, "ID inválido");
                 }
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(null, "❌ Error al eliminar usuario: " + ex.getMessage());
             }
         });
 
-        // 📋 Listar
-        btnListar.addActionListener(e -> {
-            try {
-                ControllerUsuario.mostrarTodosUsuarios();
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(null, "❌ Error al mostrar usuarios: " + ex.getMessage());
-            }
-        });
+        btnActualizar.addActionListener(e -> cargarUsuarios());
 
-        // === Añadir botones al panel ===
-        gridPanel.add(btnCrear);
-        gridPanel.add(btnEditar);
-        gridPanel.add(btnEliminar);
-        gridPanel.add(btnListar);
-
-        // === Estructura final ===
-        mainPanel.add(topPanel);
-        mainPanel.add(gridPanel);
-
-        add(mainPanel);
+        // =============================
+        // Cargar lista inicial
+        // =============================
+        cargarUsuarios();
     }
 
-    // === Método para crear botones uniformes con hover ===
-    private JButton crearBoton(String texto, Color colorFondo) {
-        JButton boton = new JButton(texto);
-        boton.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        boton.setForeground(Color.WHITE);
-        boton.setFocusPainted(false);
-        boton.setBorderPainted(false);
-        boton.setBackground(colorFondo);
-        boton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        boton.setHorizontalAlignment(SwingConstants.LEFT);
-        boton.setIconTextGap(15);
-        boton.setMargin(new Insets(10, 20, 10, 20));
+    // ============================================================
+    // Cargar usuarios y crear tarjetas visuales
+    // ============================================================
+    private void cargarUsuarios() {
+        cardsPanel.removeAll();
 
-        boton.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                boton.setBackground(colorFondo.darker());
+        try {
+            Connection con = DLL.ConexionDB.getInstance().getConnection();
+            PreparedStatement st = con.prepareStatement("SELECT * FROM usuarios");
+            ResultSet rs = st.executeQuery();
+
+            while (rs.next()) {
+                JPanel card = crearCardUsuario(
+                        rs.getInt("id_usuario"),
+                        rs.getString("nombre_usuario"),
+                        rs.getString("email"),
+                        rs.getString("rol")
+                );
+                cardsPanel.add(card);
+                cardsPanel.add(Box.createVerticalStrut(10));
             }
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                boton.setBackground(colorFondo);
-            }
+
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error al cargar usuarios");
+        }
+
+        cardsPanel.revalidate();
+        cardsPanel.repaint();
+    }
+
+    // ============================================================
+    // Crear tarjeta individual con icono + datos
+    // ============================================================
+    private JPanel crearCardUsuario(int id, String nombre, String email, String rol) {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(Color.WHITE);
+        panel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(200, 200, 200)),
+                BorderFactory.createEmptyBorder(10, 10, 10, 10)
+        ));
+
+        // ICONO
+        JLabel lblIcon = new JLabel();
+        try {
+            ImageIcon icon = new ImageIcon(getClass().getResource("/img/usuario.png"));
+            Image scaled = icon.getImage().getScaledInstance(55, 55, Image.SCALE_SMOOTH);
+            lblIcon.setIcon(new ImageIcon(scaled));
+        } catch (Exception e) {
+            lblIcon.setText("👤");
+            lblIcon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 40));
+        }
+
+        // TEXTO
+        JPanel textPanel = new JPanel();
+        textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
+        textPanel.setBackground(Color.WHITE);
+
+        textPanel.add(new JLabel("ID: " + id));
+        textPanel.add(new JLabel("Nombre: " + nombre));
+        textPanel.add(new JLabel("Email: " + email));
+        textPanel.add(new JLabel("Rol: " + rol));
+
+        panel.add(lblIcon, BorderLayout.WEST);
+        panel.add(textPanel, BorderLayout.CENTER);
+
+        return panel;
+    }
+
+    // ============================================================
+    // Botón volver
+    // ============================================================
+    private JButton crearBotonBack() {
+        JButton btn = new JButton();
+
+        try {
+            ImageIcon icon = new ImageIcon(getClass().getResource("/img/atras.png"));
+            Image scaled = icon.getImage().getScaledInstance(24, 24, Image.SCALE_SMOOTH);
+            btn.setIcon(new ImageIcon(scaled));
+        } catch (Exception e) {
+            btn.setText("⬅");
+        }
+
+        btn.setBorderPainted(false);
+        btn.setContentAreaFilled(false);
+        btn.setFocusPainted(false);
+        btn.setPreferredSize(new Dimension(40, 40));
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+        btn.addActionListener(e -> {
+            dispose();
+            new MenuAdminView(usuario).setVisible(true);
         });
-        return boton;
+
+        return btn;
+    }
+
+    // ============================================================
+    // Botón inferior estándar
+    // ============================================================
+    private JButton crearBoton(String texto) {
+        JButton btn = new JButton(texto);
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        btn.setBackground(new Color(52, 152, 219));
+        btn.setForeground(Color.WHITE);
+        btn.setFocusPainted(false);
+        btn.setPreferredSize(new Dimension(150, 35));
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        return btn;
     }
 }
