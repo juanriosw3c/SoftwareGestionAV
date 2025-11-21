@@ -107,13 +107,25 @@ public class LoginView extends JFrame {
                         "Acceso concedido", JOptionPane.INFORMATION_MESSAGE);
 
                 switch (usuario.getRol()) {
-                    case ADMIN -> new MenuAdminView(usuario).setVisible(true);
-                    case VENDEDOR -> JOptionPane.showMessageDialog(this, "Vista vendedor no implementada aún.");
-                    case DEPOSITO -> JOptionPane.showMessageDialog(this, "Vista depósito no implementada aún.");
-                    default -> JOptionPane.showMessageDialog(this, "Rol no reconocido.");
+
+                case ADMIN -> {
+                    new MenuAdminView(usuario).setVisible(true);
+                    dispose();
                 }
 
-                dispose(); 
+                case VENDEDOR -> {
+                    new MenuVendedorView(usuario).setVisible(true);
+                    dispose();
+                }
+
+                case DEPOSITO -> {
+                    new MenuDepositoView(usuario).setVisible(true);
+                    dispose();
+                }
+
+                default -> JOptionPane.showMessageDialog(this, "Rol no reconocido.");
+            }
+
             } else {
                 JOptionPane.showMessageDialog(this, "Credenciales incorrectas.", "Error", JOptionPane.ERROR_MESSAGE);
             }

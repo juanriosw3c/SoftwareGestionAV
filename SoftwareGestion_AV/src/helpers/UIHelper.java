@@ -91,6 +91,35 @@ public class UIHelper {
 
         return boton;
     }
+    
+ // ========================================
+ // 🔒 BOTÓN BLOQUEADO (PARA PERMISOS RESTRINGIDOS)
+ // ========================================
+ public static JButton crearBotonMenuBloqueado(String texto, String iconPath) {
+     JButton btn = new JButton(texto);
+     btn.setFont(FONT_BUTTON);
+     btn.setForeground(Color.WHITE);
+     btn.setBackground(new Color(180, 180, 180)); // gris bloqueado
+     btn.setFocusPainted(false);
+     btn.setEnabled(false);
+     btn.setCursor(Cursor.getDefaultCursor());
+     btn.setHorizontalAlignment(SwingConstants.LEFT);
+     btn.setIconTextGap(15);
+     btn.setMargin(new Insets(10, 20, 10, 20));
+
+     try {
+         ImageIcon icon = new ImageIcon(UIHelper.class.getResource(iconPath));
+         Image img = icon.getImage().getScaledInstance(24, 24, Image.SCALE_SMOOTH);
+         btn.setIcon(new ImageIcon(img));
+     } catch (Exception e) {
+         System.err.println("❌ Error cargando ícono bloqueado: " + iconPath);
+     }
+
+     btn.setToolTipText("Acceso restringido para este rol");
+
+     return btn;
+ }
+
 
     // ========================================
     // 🏷 TÍTULO CENTRAL
