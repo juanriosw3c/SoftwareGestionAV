@@ -2,237 +2,170 @@ package views;
 
 import javax.swing.*;
 import java.awt.*;
-import java.sql.*;
-import DLL.ConexionDB;
-import DLL.ControllerProveedor;
-import models.Proveedor;
+import helpers.UIHelper;
 import models.UsuarioBase;
+import DLL.ControllerProveedor;
 
 public class ProveedoresView extends JFrame {
 
-    private UsuarioBase usuarioActual;
-
-    private DefaultListModel<String> modeloLista;
-    private JList<String> listaProveedores;
-
-    private JButton btnAgregar;
-    private JButton btnEditar;
-    private JButton btnEliminar;
-    private JButton btnDetalles;
-    private JButton btnActualizar;
-    private JButton btnVolver;
+    private JTextArea txtArea;
+    private UsuarioBase usuario;
 
     public ProveedoresView(UsuarioBase usuario) {
-        this.usuarioActual = usuario;
+        this.usuario = usuario;
 
-        configurarVentana();
-        inicializarComponentes();
-        cargarProveedores();
-
-        setVisible(true);
-    }
-
-    // ============================
-    // CONFIGURAR FRAME
-    // ============================
-    private void configurarVentana() {
-        setTitle("Gestión de Proveedores");
-        setSize(650, 550);
+        setTitle("Proveedores - " + usuario.getNombre() + " (" + usuario.getRol() + ")");
+        setSize(650, 500);
         setLocationRelativeTo(null);
-        setResizable(false);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setResizable(false);
         setLayout(new BorderLayout());
-    }
 
-    // ============================
-    // COMPONENTES
-    // ============================
-    private void inicializarComponentes() {
+        // =============================
+        // TOP PANEL (volver + título)
+        // =============================
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setBackground(UIHelper.GRAY_BG);
+        topPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // ===== TOP BAR =====
-        JPanel top = new JPanel(new BorderLayout());
-        top.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        top.setBackground(new Color(245, 245, 245));
-
-        btnVolver = new JButton("⬅ Volver");
-        btnVolver.addActionListener(e -> {
+        // Botón volver con icono
+        JButton btnBack = UIHelper.crearBotonVolver(() -> {
             dispose();
-            new MenuAdminView(usuarioActual).setVisible(true);
+            new MenuAdminView(usuario).setVisible(true);
         });
 
-        JLabel titulo = new JLabel("Gestión de Proveedores", SwingConstants.CENTER);
-        titulo.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        topPanel.add(btnBack, BorderLayout.WEST);
+        topPanel.add(UIHelper.crearTitulo("Gestión de Proveedores"), BorderLayout.CENTER);
 
-        top.add(btnVolver, BorderLayout.WEST);
-        top.add(titulo, BorderLayout.CENTER);
+        add(topPanel, BorderLayout.NORTH);
 
-        add(top, BorderLayout.NORTH);
+        // =============================
+        // CENTRO → AREA DE TEXTO
+        // =============================
+        txtArea = new JTextArea();
+        txtArea.setEditable(false);
+        txtArea.setFont(UIHelper.FONT_LIST);
 
-        // ===== LISTA =====
-        modeloLista = new DefaultListModel<>();
-        listaProveedores = new JList<>(modeloLista);
-        listaProveedores.setFont(new Font("Segoe UI", Font.PLAIN, 15));
-
-        JScrollPane scroll = new JScrollPane(listaProveedores);
-        scroll.setBorder(BorderFactory.createTitledBorder("Proveedores registrados"));
+        JScrollPane scroll = new JScrollPane(txtArea);
+        scroll.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         add(scroll, BorderLayout.CENTER);
 
-        // ===== BOTONERA =====
-        JPanel acciones = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 15));
-        acciones.setBackground(new Color(245, 245, 245));
+        actualizarLista();
 
-        btnAgregar    = crearBoton("Agregar",    new Color(52, 152, 219));
-        btnEditar     = crearBoton("Editar",     new Color(46, 204, 113));
-        btnEliminar   = crearBoton("Eliminar",   new Color(231, 76, 60));
-        btnDetalles   = crearBoton("Detalles",   new Color(155, 89, 182));
-        btnActualizar = crearBoton("Actualizar", new Color(26, 188, 156));
+        // =============================
+        // PANEL DE BOTONES INFERIOR
+        // =============================
+        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 10));
+        bottomPanel.setBackground(UIHelper.GRAY_BG);
 
-        acciones.add(btnAgregar);
-        acciones.add(btnEditar);
-        acciones.add(btnEliminar);
-        acciones.add(btnDetalles);
-        acciones.add(btnActualizar);
+        JButton btnAgregar = UIHelper.crearBoton("Agregar proveedor", UIHelper.GREEN);
+        JButton btnEditar = UIHelper.crearBoton("Editar proveedor", UIHelper.BLUE);
+        JButton btnEliminar = UIHelper.crearBoton("Eliminar proveedor", UIHelper.RED);
+        JButton btnActualizar = UIHelper.crearBoton("Actualizar lista", UIHelper.TEAL);
 
-        add(acciones, BorderLayout.SOUTH);
+        bottomPanel.add(btnAgregar);
+        bottomPanel.add(btnEditar);
+        bottomPanel.add(btnEliminar);
+        bottomPanel.add(btnActualizar);
 
-        // ===== Eventos =====
-        btnAgregar.addActionListener(e -> agregarProveedor());
-        btnEditar.addActionListener(e -> editarProveedor());
-        btnEliminar.addActionListener(e -> eliminarProveedor());
-        btnDetalles.addActionListener(e -> verDetalles());
-        btnActualizar.addActionListener(e -> cargarProveedores());
-    }
+        add(bottomPanel, BorderLayout.SOUTH);
 
-    // ============================
-    // CREAR BOTÓN
-    // ============================
-    private JButton crearBoton(String texto, Color color) {
-        JButton b = new JButton(texto);
-        b.setFont(new Font("Segoe UI", Font.BOLD, 15));
-        b.setForeground(Color.WHITE);
-        b.setBackground(color);
-        b.setFocusPainted(false);
+        // =============================
+        // EVENTOS
+        // =============================
+        btnAgregar.addActionListener(e -> {
 
-        b.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) { b.setBackground(color.darker()); }
-            public void mouseExited(java.awt.event.MouseEvent evt)  { b.setBackground(color); }
+            JTextField txtNombre = new JTextField();
+            JTextField txtContacto = new JTextField();
+            JTextField txtTelefono = new JTextField();
+            JTextField txtEmail = new JTextField();
+
+            JPanel panel = new JPanel(new GridLayout(0, 1));
+            panel.add(new JLabel("Nombre:"));
+            panel.add(txtNombre);
+            panel.add(new JLabel("Contacto:"));
+            panel.add(txtContacto);
+            panel.add(new JLabel("Teléfono:"));
+            panel.add(txtTelefono);
+            panel.add(new JLabel("Email:"));
+            panel.add(txtEmail);
+
+            int res = JOptionPane.showConfirmDialog(null, panel,
+                    "Nuevo proveedor", JOptionPane.OK_CANCEL_OPTION);
+
+            if (res == JOptionPane.OK_OPTION) {
+                try {
+                    models.Proveedor p = new models.Proveedor(
+                            0,
+                            txtNombre.getText(),
+                            txtContacto.getText(),
+                            txtTelefono.getText(),
+                            txtEmail.getText()
+                    );
+                    ControllerProveedor.agregarProveedor(p);
+                    actualizarLista();
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(this, "Datos inválidos.");
+                }
+            }
         });
 
-        return b;
+        btnEditar.addActionListener(e -> {
+            String input = JOptionPane.showInputDialog("Ingrese ID del proveedor a editar:");
+            if (input != null && !input.trim().isEmpty()) {
+                try {
+                    int id = Integer.parseInt(input);
+                    ControllerProveedor.editarProveedor(id);
+                    actualizarLista();
+                } catch (NumberFormatException ex) {
+                    JOptionPane.showMessageDialog(this, "ID inválido.");
+                }
+            }
+        });
+
+        btnEliminar.addActionListener(e -> {
+            String input = JOptionPane.showInputDialog("Ingrese ID del proveedor a eliminar:");
+            if (input != null && !input.trim().isEmpty()) {
+                try {
+                    int id = Integer.parseInt(input);
+                    ControllerProveedor.eliminarPorID(id);
+                    actualizarLista();
+                } catch (NumberFormatException ex) {
+                    JOptionPane.showMessageDialog(this, "ID inválido.");
+                }
+            }
+        });
+
+        btnActualizar.addActionListener(e -> actualizarLista());
     }
 
-    // ============================
-    // CARGAR PROVEEDORES
-    // ============================
-    private void cargarProveedores() {
-        modeloLista.clear();
+
+    // ============================================
+    // ACTUALIZAR LA LISTA USANDO TU CONTROLADOR
+    // ============================================
+    private void actualizarLista() {
+        txtArea.setText("");
+
+        StringBuilder sb = new StringBuilder("Listado de proveedores:\n\n");
+
         try {
-            Connection con = ConexionDB.getInstance().getConnection();
-            PreparedStatement st = con.prepareStatement("SELECT * FROM proveedor");
-            ResultSet rs = st.executeQuery();
+            var con = DLL.ConexionDB.getInstance().getConnection();
+            var stmt = con.prepareStatement("SELECT * FROM proveedor");
+            var rs = stmt.executeQuery();
 
             while (rs.next()) {
-                modeloLista.addElement(
-                    "ID: " + rs.getInt("id_proveedor") +
-                    " | " + rs.getString("nombre") +
-                    " | Contacto: " + rs.getString("contacto")
-                );
+                sb.append("ID: ").append(rs.getInt("id_proveedor"))
+                  .append(" | Nombre: ").append(rs.getString("nombre"))
+                  .append(" | Contacto: ").append(rs.getString("contacto"))
+                  .append(" | Tel: ").append(rs.getString("telefono"))
+                  .append(" | Email: ").append(rs.getString("email"))
+                  .append("\n");
             }
 
-            rs.close();
-            st.close();
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Error al cargar proveedores: " + e.getMessage());
-        }
-    }
-
-    // ============================
-    // OBTENER ID SELECCIONADO
-    // ============================
-    private int obtenerID() {
-        String item = listaProveedores.getSelectedValue();
-        if (item == null) {
-            JOptionPane.showMessageDialog(this, "Seleccione un proveedor.");
-            return -1;
+            sb.append("Error cargando proveedores.\n");
         }
 
-        try {
-            return Integer.parseInt(item.split("\\|")[0].replace("ID:", "").trim());
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Error al obtener ID.");
-            return -1;
-        }
-    }
-
-    // ============================
-    // AGREGAR
-    // ============================
-    private void agregarProveedor() {
-        try {
-            String nombre   = JOptionPane.showInputDialog("Nombre:");
-            String contacto = JOptionPane.showInputDialog("Contacto:");
-            String telefono = JOptionPane.showInputDialog("Teléfono:");
-            String email    = JOptionPane.showInputDialog("Email:");
-
-            if (nombre == null || nombre.isEmpty()) return;
-
-            Proveedor p = new Proveedor(
-                0, nombre, contacto, telefono, email
-            );
-
-            ControllerProveedor.agregarProveedor(p);
-            cargarProveedores();
-
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Datos inválidos.");
-        }
-    }
-
-    // ============================
-    // EDITAR
-    // ============================
-    private void editarProveedor() {
-        int id = obtenerID();
-        if (id == -1) return;
-
-        ControllerProveedor.editarProveedor(id);
-        cargarProveedores();
-    }
-
-    // ============================
-    // ELIMINAR
-    // ============================
-    private void eliminarProveedor() {
-        int id = obtenerID();
-        if (id == -1) return;
-
-        int conf = JOptionPane.showConfirmDialog(this, "¿Eliminar proveedor?", "Confirmar", JOptionPane.YES_NO_OPTION);
-        if (conf == JOptionPane.YES_OPTION) {
-            ControllerProveedor.eliminarPorID(id);
-            cargarProveedores();
-        }
-    }
-
-    // ============================
-    // DETALLES
-    // ============================
-    private void verDetalles() {
-        int id = obtenerID();
-        if (id == -1) return;
-
-        Proveedor p = ControllerProveedor.buscarPorID(id);
-        if (p == null) {
-            JOptionPane.showMessageDialog(this, "Proveedor no encontrado.");
-            return;
-        }
-
-        JOptionPane.showMessageDialog(this,
-                "ID: " + p.getId_proveedor() + "\n" +
-                "Nombre: " + p.getNombre() + "\n" +
-                "Contacto: " + p.getContacto() + "\n" +
-                "Teléfono: " + p.getTelefono() + "\n" +
-                "Email: " + p.getEmail(),
-                "Detalles del proveedor",
-                JOptionPane.INFORMATION_MESSAGE);
+        txtArea.setText(sb.toString());
     }
 }
